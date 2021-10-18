@@ -171,7 +171,11 @@ ggplot(data = vol, # use vol as underlying data
   geom_line(aes(group = id), alpha = 0.6) + # add lines to figure (group by id and set transparency to 0.4)
   geom_smooth(se = F,size = 2) # Add smoothed moving average (loess) to figure (don't draw standard errors and make the line bigger)
 
-#
+#Add variables for different model contrasts
+
+vol <- vol %>%
+  mutate(group_CAT = relevel(group,ref="CAT"),
+         group_CMF = relevel(group,ref="CMF"))
 
 # try a simple model using only the final tumor volumes
 vol_final <- vol %>%
@@ -179,12 +183,6 @@ vol_final <- vol %>%
 
 vol_fit_final <- lm(value ~ group, # Fit linear regression model for additive effects of old/new drugs on final tumor volume
               data = vol_final)
-
-#Add variables for different model contrasts
-
-vol <- vol %>%
-  mutate(group_CAT = relevel(group,ref="CAT"),
-         group_CMF = relevel(group,ref="CMF"))
 
 # Fit seperate models to get contrasts - I think there are packages out there to get contrasts from a single model... But this should work.
 vol_fit_final_CAT <- lm(value ~ group_CAT, data = vol_final)
@@ -301,17 +299,15 @@ vol_ci_table <- confint(vol_fit_boot,type = "perc") %>% # Extract percentile con
 vol_ci_table_CAT <- confint(vol_fit_boot_CAT,type = "perc") %>% 
   select(-type,-level) %>%  
   mutate(across(c(estimate,lower,upper),function(x)round(exp(x),3)),
-         ref = rep("Ctrl",nrow(.)))
+         ref = rep("CAT",nrow(.)))
 
 
 vol_ci_table_CMF <- confint(vol_fit_boot_CMF,type = "perc") %>% 
   select(-type,-level) %>%
   mutate(across(c(estimate,lower,upper),function(x)round(exp(x),3)),
-         ref = rep("Ctrl",nrow(.)))
+         ref = rep("CMF",nrow(.)))
 
 
 volume_ci <- rbind(vol_ci_table,
                    vol_ci_table_CAT,
                    vol_ci_table_CMF)
-
-
